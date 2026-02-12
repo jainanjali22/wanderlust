@@ -1,5 +1,5 @@
-if(process.env.NODE_ENV != "production"){
-  require('dotenv').config();
+if (process.env.NODE_ENV != "production") {
+  require("dotenv").config();
 }
 
 const express = require("express");
@@ -10,7 +10,7 @@ const methodOverride = require("method-override");
 const ejsMate = require("ejs-mate");
 const ExpressError = require("./utils/ExpressError");
 const session = require("express-session");
-const MongoStore = require('connect-mongo');
+const MongoStore = require("connect-mongo");
 const flash = require("connect-flash");
 const passport = require("passport");
 const LocalStrategy = require("passport-local");
@@ -25,7 +25,7 @@ const dbUrl = process.env.ATLASDB_URL;
 mongoose
   .connect(dbUrl)
   .then(() => console.log("Connected to MongoDB"))
-  .catch(err => console.log(err));
+  .catch((err) => console.log(err));
 
 app.engine("ejs", ejsMate);
 app.set("view engine", "ejs");
@@ -39,7 +39,6 @@ const store = MongoStore.create({
   mongoUrl: dbUrl,
   collectionName: "sessions",
 });
-
 
 store.on("error", (err) => {
   console.log("ERROR in MONGO SESSION STORE", err);
@@ -74,22 +73,31 @@ app.use((req, res, next) => {
   next();
 });
 
-// app.get("/", (req, res) => {
-//   res.send("Hi, I am root");
-// });
 
+// ✅ IMPORTANT: Root route add karo
+app.get("/", (req, res) => {
+  res.redirect("/listings");
+});
+
+
+// Routes
 app.use("/listings", listingsRouter);
 app.use("/listings/:id/reviews", reviewsRouter);
 app.use("/", userRouter);
 
+
+// 404 handler
 app.all("*", (req, res, next) => {
   next(new ExpressError(404, "Page Not Found"));
 });
 
+
+// Error handler
 app.use((err, req, res, next) => {
   const { statusCode = 500, message = "Something went wrong!" } = err;
   res.status(statusCode).render("error.ejs", { message });
 });
+
 
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
