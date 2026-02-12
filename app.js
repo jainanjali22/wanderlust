@@ -1,4 +1,4 @@
-if (process.env.NODE_ENV != "production") {
+if (process.env.NODE_ENV !== "production") {
   require("dotenv").config();
 }
 
@@ -22,6 +22,7 @@ const userRouter = require("./routes/user");
 
 const dbUrl = process.env.ATLASDB_URL;
 
+// MongoDB Connection
 mongoose
   .connect(dbUrl)
   .then(() => console.log("Connected to MongoDB"))
@@ -35,20 +36,21 @@ app.use(express.urlencoded({ extended: true }));
 app.use(methodOverride("_method"));
 app.use(express.static(path.join(__dirname, "public")));
 
+// Session Store
 const store = MongoStore.create({
   mongoUrl: dbUrl,
   collectionName: "sessions",
 });
 
 store.on("error", (err) => {
-  console.log("ERROR in MONGO SESSION STORE", err);
+  console.log("SESSION STORE ERROR", err);
 });
 
 const sessionOptions = {
   store,
   secret: process.env.SECRET,
   resave: false,
-  saveUninitialized: true,
+  saveUninitialized: false,
   cookie: {
     httpOnly: true,
     expires: Date.now() + 7 * 24 * 60 * 60 * 1000,
@@ -66,6 +68,7 @@ passport.use(new LocalStrategy(User.authenticate()));
 passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser());
 
+// Global variables
 app.use((req, res, next) => {
   res.locals.currentUser = req.user;
   res.locals.success = req.flash("success");
@@ -74,7 +77,7 @@ app.use((req, res, next) => {
 });
 
 
-// ✅ IMPORTANT: Root route add karo
+// ✅ VERY IMPORTANT — ROOT ROUTE (ROUTES SE PEHLE)
 app.get("/", (req, res) => {
   res.redirect("/listings");
 });
@@ -86,19 +89,18 @@ app.use("/listings/:id/reviews", reviewsRouter);
 app.use("/", userRouter);
 
 
-// 404 handler
+// 404 Handler
 app.all("*", (req, res, next) => {
   next(new ExpressError(404, "Page Not Found"));
 });
 
-
-// Error handler
+// Error Handler
 app.use((err, req, res, next) => {
   const { statusCode = 500, message = "Something went wrong!" } = err;
   res.status(statusCode).render("error.ejs", { message });
 });
 
-
+// Server Start
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
