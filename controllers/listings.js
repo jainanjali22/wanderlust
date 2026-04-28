@@ -15,20 +15,25 @@ module.exports.renderNewform = (req, res) => {
 module.exports.showListing = async (req, res) => {
   const { id } = req.params;
   const listing = await Listing.findById(id)
-  .populate({
-    path: "reviews", 
-    populate: {
-    path: "author",
-  },
-})
-  .populate("owner");
+    .populate({
+      path: "reviews",
+      populate: {
+        path: "author",
+      },
+    })
+    .populate("owner");
 
   if (!listing) {
     req.flash("error", "Listing you requested for does not exist");
     return res.redirect("/listings");
   }
+
   console.log(listing);
-  res.render("listings/show.ejs", { listing });
+
+  res.render("listings/show.ejs", {
+    listing,
+    mapToken: process.env.MAP_TOKEN
+  });
 };
 
 module.exports.createListing = async (req, res) => {
